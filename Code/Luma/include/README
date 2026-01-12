@@ -1,0 +1,83 @@
+States of the device
+
+1. STATE_DEVICE_ON - starting animation
+2. STATE_DEVICE_SCREENSAVER - infinite screen saver
+3. STATE_DEVICE_MENU - Main Menu of the device
+We have currently three menu option 
+STATE_THEMES | STATE_BRIGHT | STATE_TIMER_SELECT_TIME
+
+Timer Page 
+4. STATE_TIMER_SELECT_TIME - choose duration for the timer
+5. STATE_TIMER_COUNTDOWN - countdown before the timer
+6. STATE_TIMER_RUNNING - sand falling according to the duration
+7. STATE_TIMER_PAUSED - timer paused [have to work on this]
+8. STATE_TIMER_FINISHED - celebration until button press 
+
+Theme Page
+9. STATE_THEMES - selection of theme
+
+Brightness Page
+10. STATE_BRIGHT - selection of brightness
+
+2 Buttons are present to navigate through the device
+Button A and B and depending on the user did long press or short press the result is reflected on the device and it also depends on which state the device some button presses have no meaning in some states.
+
+1. **STATE_DEVICE_ON** - This needs no button press, immediately when the device is powered animation will start and it will transistion to **STATE_DEVICE_SCREENSAVER**
+2. **STATE_DEVICE_SCREENSAVER** - Infinite screen saver
+    - Long Press A: No action
+    - Short Press A: Transition to **STATE_DEVICE_MENU**
+    - Long Press B: No action 
+    - Short Press B: No action
+3. **STATE_DEVICE_MENU** - Main Menu of device
+    - Long Press A: No action
+    - Short Press A: No action
+    - Long Press B: to select menu option can do transition to **STATE_TIMER_SELECT_TIME , STATE_THEMES , STATE_BRIGHT**  
+    - Short Press B: cycle through the menu option
+4. **STATE_TIMER_SELECT_TIME** - choosing timer duration
+    - Long Press A: No action
+    - Short Press A: Transition back to **STATE_DEVICE_MENU**
+    - Long Press B: to select duration option and transition to **STATE_TIMER_COUNTDOWN** 
+    - Short Press B: cycle through the duration option
+5. **STATE_TIMER_COUNTDOWN** - Count down animation 
+    - Long Press A: No action
+    - Short Press A: No action
+    - Long Press B: No action
+    - Short Press B: No action
+    - Auto Transition to **STATE_TIMER_RUNNING**
+6. **STATE_TIMER_RUNNING** - sand falling according to the duration
+    - Long Press A: No action
+    - Short Press A: Pause the timer Transition to **STATE_TIMER_PAUSED**
+    - Long Press B: No action
+    - Short Press B: No action
+7. **STATE_TIMER_PAUSED** - timer paused
+    - Long Press A: No action
+    - Short Press A: resume timer Transition to **STATE_TIMER_RUNNING**
+    - Long Press B: Cancel timer Transition to **STATE_TIMER_SELECT_TIME**
+    - Short Press B: No action
+8. **STATE_TIMER_FINISHED** - timer finish infinite animation
+    - Long Press A: No action
+    - Short Press A: Transition to **STATE_TIMER_SELECT_TIME**
+    - Long Press B: No action
+    - Short Press B: Transition to **STATE_TIMER_SELECT_TIME**
+9. **STATE_THEMES** - theme selection
+    - Long Press A: No action
+    - Short Press A: Transition to **STATE_DEVICE_MENU**
+    - Long Press B: Apply the selected theme and transition to **STATE_DEVICE_MENU**
+    - Short Press B: cycle theme options
+10. **STATE_BRIGHT** - brightness selection
+    - Long Press A: No action
+    - Short Press A: Transition to **STATE_DEVICE_MENU**
+    - Long Press B: Apply the selected brightness level and transition to **STATE_DEVICE_MENU**
+    - Short Press B: cycle brightness level options
+
+
+as 29.12.25 a lot of plans is changed   
+
+1. **STATE_DEVICE_ON** : Animation for this page is done and fixed _do not touch it_
+2. **STATE_DEVICE_SCREENSAVER** : Infinit Animation for this page is done just few minor improvements is needed here 
+    - Change the color of explosion to yellow for vibrate and red for explosion (not done yet)
+    - Need to Add a long press B action for this (not done yet)
+3. **STATE_DEVICE_MENU** : This page was done but right now i changed the whole plan for the device so pages are done. Just i will rework on those pages according to the new features
+4. **STATE_TIMER_SELECT_TIME** : Right now there will be no timer functionality overall so the timer and the rest of the timer pages will be kept as it or hidden
+9. **STATE_THEMES** : The feature of this page will be changed all together to Color Flood or Chromatic Spread. This will be interactive color spreading based on the button presses. I will change the name of the state too **STATE_COLOR_FLOOD** 
+10. **STATE_BRIGHT** : The feature of this page will be changed to Falling Pixel. This will be interactive each button presses will drop a pixel and when all the pixel are filled then a dramatic animation to clear all the pixel , the name of this state change to **STATE_FALLING_PIXEL**
