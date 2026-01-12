@@ -13,10 +13,21 @@ It features a simple **menu system** and multiple pixel-based visual interaction
 - Button driven menu navigation
 - Interactive ambient animations
 - Multiple interaction modes
----
+
 ## Hardware Overview
 - **MCU** ESP32 C3 Supermini Board
 - **Display** WS2812B 8x8 Matrix
 - **Inputs** 2 Tactile Buttons
 
+## Firmware & Source Code
+Luma is built using **PlatformIO**  
+- Source code are available via **Github Releases**
+- Each release represents a stable firmware version
+> See the **Releases** section to download firmware source
 
+## Project Status
+- Current release: **v1**
+- Future updates planned (new interactions & refinement)
+
+## Documentation
+- Check out my project on Hackster.io all the schematics and available there, Click here 
