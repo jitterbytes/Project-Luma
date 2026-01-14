@@ -132,7 +132,7 @@ void LumaFSM::onButtonBPressed(bool longPress) {
                 Serial.println(menuNames[selectedMenuOption]);
             } 
             else {  // Long press B to select the menu option
-                if (selectedMenuOption == MENU_THEMES) {
+                if (selectedMenuOption == MENU_COLOR_FLOOD) {
                     Serial.println("[ACTION] Menu selected THEMES -> Themes");
                     transitionTo(STATE_COLOR_FLOOD);
                 } else if (selectedMenuOption == MENU_FALLING_PIXELS) {
@@ -348,7 +348,7 @@ void LumaFSM::handleState_DeviceMenu() {
 
     switch (selectedMenuOption)
     {
-    case MENU_THEMES:
+    case MENU_COLOR_FLOOD:
         drawMenu_ColorFlood();
         break;
     case MENU_FALLING_PIXELS:
