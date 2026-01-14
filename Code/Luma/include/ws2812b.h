@@ -3,7 +3,7 @@
  * @author sarvesh
  * @brief WS2812B LED matrix driver utilities
  * @version 1.0
- * @date 2025-12-16
+ * @date 2026-1-14
  * 
  * @copyright Copyright (c) 2026
  * 
@@ -15,7 +15,7 @@
 #include <Adafruit_NeoPixel.h>
 
 // Matrix Configurations 
-#define DATA_PIN 10                 // WS2812B data line
+#define DATA_PIN 10                 // WS2812B data line - Change this to your Din GPIO Pin
 #define WIDTH 8                     // Matrix width
 #define HEIGHT 8                    // Matrix height
 #define NUM_LEDS (WIDTH * HEIGHT)   // Total LEDs
@@ -23,6 +23,6 @@
 // Global Neopixel Matrix Instance shared across the project
 extern Adafruit_NeoPixel matrix;    
 
-int pixelIndex(int row, int col);
+int pixelIndex(int row, int col);   // Converts 2D coordinates to 1D pixel Index
 
 #endif

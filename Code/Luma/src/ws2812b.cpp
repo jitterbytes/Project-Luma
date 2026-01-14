@@ -3,7 +3,7 @@
  * @author sarvesh
  * @brief Implementation of ws2812b.h 
  * @version 1.0
- * @date 2025-12-16
+ * @date 2026-1-14
  * 
  * @copyright Copyright (c) 2026
  * 
