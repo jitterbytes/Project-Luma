@@ -30,4 +30,4 @@ Luma is built using **PlatformIO**
 - Future updates planned (new interactions & refinement)
 
 ## Documentation
-- Check out my project on Hackster.io all the schematics and available there, Click here[https://www.hackster.io/sarveshsant089/luma-an-interactive-ambient-pixel-object-94afe7] 
+- Check out my project on Hackster.io all the schematics and available there, [Click here](https://www.hackster.io/sarveshsant089/luma-an-interactive-ambient-pixel-object-94afe7) 
