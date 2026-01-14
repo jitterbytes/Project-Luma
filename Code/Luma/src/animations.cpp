@@ -1,3 +1,13 @@
+/**
+ * @file animations.cpp
+ * @author sarvesh
+ * @brief Implementation of animations.h
+ * @version 1.0
+ * @date 2026-1-14
+ * 
+ * @copyright Copyright (c) 2026
+ * 
+ */
 #include "animations.h"
 #include "ws2812b.h"
 
@@ -52,7 +62,7 @@ void updatePixelExplosion() {
             int r = baseRow + random(-2, 2);    // -2 -1 0 1 -> 4x4 matrix
             int c = baseCol + random(-2, 2);    // Increasing the range increases the matrix size
 
-            if (r >= 0 && r < HEIGHT && c >= 0 && c < WIDTH) {
+            if (r >= 0 && r < HEIGHT && c >= 0 && c < WIDTH) {  // adding guards for r & c so they do not go out of range
                 matrix.setPixelColor(pixelIndex(r, c), explosionColor);
             }
         }
@@ -80,7 +90,7 @@ void drawMenu_ColorFlood() {
 
     // frame rate control [animation fps control]
     // smaller value -> smoother & faster | larger value -> slower and choppy
-    if (millis() - lastUpdate < 55) return;
+    if (millis() - lastUpdate < 55) return; // 1000ms / 55ms -> ~18FPS
 
     lastUpdate = millis();  // updates the current time as the last frame time
 
@@ -110,7 +120,7 @@ void drawMenu_ColorFlood() {
 
             int dist = abs(x - cx) + abs(y - cy);   // calculating manhattan distance from center 
             // can use euclidean distance formula above to get circular expansion 
-            // but since i have just 8x8 i didn't choose circular expansion
+            // but since i have just 8x8 i did not choose circular expansion
             
             // radius at the begining will be 0 say origin is 3,3 so in first frame only 3,3 will lit up 
             // Next frame radius is 1 then the 4 pixel on each side of 3,3 will lit up and so on so forth..
@@ -149,7 +159,7 @@ void drawMenu_FallingPixel() {
 
     // frame rate control [animation fps control]
     // smaller value -> smoother & faster | larger value -> slower and choppy
-    if (millis() - lastUpdate < 90) return;
+    if (millis() - lastUpdate < 90) return; // 1000ms / 90ms -> ~11FPS
 
     // Gravity pause handling - adds a lil weight to the motion
     if (millis() < gravityPauseUntil) return;
@@ -166,7 +176,7 @@ void drawMenu_FallingPixel() {
         uint8_t b = c & 0xFF;
 
         // adding exponential fading to it | Changing the below value will affect the trail brightness  
-        r = (r * 6) / 10;   // Right now its 6/10 meaning trail will have 60% of brightness and loses 40% of brightness in each frame
+        r = (r * 6) / 10;   // leds have 60% of brightness and loses 40% of brightness in each frame
         g = (g * 6) / 10;
         b = (b * 6) / 10;
 
@@ -189,9 +199,9 @@ void drawMenu_FallingPixel() {
 }
 
 
-// ==================== Color flood page ====================
+// ==================== Color flood Interaction ====================
 
-#define MAX_FLOODS 5    // Limits the no: of simultaneous floods to prevent unexpected crashes
+#define MAX_FLOODS 5    // Limits the no: of simultaneous floods to prevent unexpected crashes/resets due to unknown memory access
 
 struct ColorFlood {     // Defines one color flood  
     int cx;             // center of flood coordinates
@@ -216,12 +226,12 @@ void ColorFlood_Init() {
 }
 
 /**
- * @brief Spawns a new ripple 
+ * @brief Spawns a new color flood 
  * 
  */
 void ColorFlood_StartNew() {
-    for (int i = 0; i < MAX_FLOODS; i++) {          // checks if the flood slot is available 
-        if (!floods[i].active) {
+    for (int i = 0; i < MAX_FLOODS; i++) {          // iterates through all the 5 Flood slots 
+        if (!floods[i].active) {                    // uses the Flood active flag to check for empty slots
             floods[i].cx = random(0, WIDTH);        // picks random column
             floods[i].cy = random(0, HEIGHT);       // picks random row
             floods[i].radius = 0;                   // starts flood as single pixel
@@ -232,15 +242,25 @@ void ColorFlood_StartNew() {
     }
 }
 
+/**
+ * @brief This is a helper function used in color flood interaction to slowly decay the flood after button presses
+ * 
+ * @param fadeAmount Controls how quicly pixels dim | Higher Value -> Slower Fade and vice versa
+ */
 void fadeMatrix(uint8_t fadeAmount) {
-    for (int i = 0; i < 64; i++) {
-        uint32_t c = matrix.getPixelColor(i);
+    for (int i = 0; i < 64; i++) {              // iterates to all the 64 leds
+        uint32_t c = matrix.getPixelColor(i);   // gets the color of the pixel
 
-        uint8_t r = (c >> 16) & 0xFF;
+        uint8_t r = (c >> 16) & 0xFF;           // extracting indivual colors using bit masking
         uint8_t g = (c >> 8)  & 0xFF;
         uint8_t b = c & 0xFF;
 
-        // scale brightness down
+        /* scale brightness down | acts as fixed point brightness multiplier
+           fadeAmount value ranges from 0 - 255 and wth >> 8 the overall gets divided by 256
+           so with fadeamount value 255 the multiplier to r,g,b value is 255/256 = 0.996 which is like almost 
+           no fade. So with lower value say like 128 the multiplier is 128/256 = 0.5 so directly 
+           50% brightness value is lost with each frame.
+        */ 
         r = (r * fadeAmount) >> 8;
         g = (g * fadeAmount) >> 8;
         b = (b * fadeAmount) >> 8;
@@ -255,12 +275,12 @@ void fadeMatrix(uint8_t fadeAmount) {
  */
 void ColorFlood_Update() {
 
-    // frame rate control - currently set at 1000/55 -> ~18 frames per second
+    // frame rate control - currently set at 1000/55 -> ~18 FPS
     if (millis() - lastUpdate < 55) return;
     lastUpdate = millis();
 
     // gentle decay so old floods fade
-    fadeMatrix(230);   // high value = slow fade
+    fadeMatrix(230);   // 230/256 = ~0.90 means with each frame it will lose 10% of it brightness.
 
     // render all active floods
     for (int i = 0; i < MAX_FLOODS; i++) {
@@ -268,7 +288,7 @@ void ColorFlood_Update() {
 
         ColorFlood &f = floods[i];  
 
-        for (int y = 0; y < HEIGHT; y++) {  
+        for (int y = 0; y < HEIGHT; y++) {                      // iterating over all the leds
             for (int x = 0; x < WIDTH; x++) {
 
                 int dist = abs(x - f.cx) + abs(y - f.cy);       // using manhattan distance formula
@@ -288,7 +308,8 @@ void ColorFlood_Update() {
 }
 
  
-// ==================== Falling Pixels page ====================
+// ==================== Falling Pixels Interaction ====================
+
 static uint32_t grid[HEIGHT][WIDTH];   // this is settled pixels, stores colors and if the place is occupied or not
 static uint8_t columnHeight[WIDTH];    // for each column how many pixels are stacked, is stored in this
 
@@ -306,10 +327,10 @@ static FallingPixel falling[MAX_FALLING];   // fixed falling limit no dynamic al
 static unsigned long lastFall = 0;  // used for frame timing
 
 /**
- * @brief 
+ * @brief Initializes the Falling Pixel Interaction
  * 
  */
-void FallingPixel_Init() {  // Initilization
+void FallingPixel_Init() {                          // Initilization
     memset(grid, 0, sizeof(grid));                  // clears settled pixels
     memset(columnHeight, 0, sizeof(columnHeight));  // Resets all columns to empty
     memset(falling, 0, sizeof(falling));            // Clears all active falling particles 
@@ -317,30 +338,42 @@ void FallingPixel_Init() {  // Initilization
     matrix.show();
 }
 
+/**
+ * @brief This is helper function to check if the column is full with pixels
+ * 
+ * @param col ,Column Value 0-7 
+ * @return true ,if the column is full
+ * @return false , if the column is not fully stacked
+ */
 bool isColumnFull(uint8_t col) {    // this is done to prevent crashes    
     return columnHeight[col] >= HEIGHT; // If column height already as HEIGHT (8) pixels then it cannot accept more
 }
 
-void FallingPixel_Spawn(uint8_t count) {    // short press -> 1 | long press -> 2-3
+/**
+ * @brief This functions drops the pixels based on the button press
+ * 
+ * @param count for short press 1 and long press drops 8-10 
+ */
+void FallingPixel_Spawn(uint8_t count) {    
 
     bool colUsed[WIDTH] = { false };   // prevents long press pixels to fall into same column spawns
 
-    for (uint8_t i = 0; i < count; i++) {   // 
+    for (uint8_t i = 0; i < count; i++) {   // loops to spawn multiple pixels
 
-        int slot = -1;  // find empty falling slot
-        for (int k = 0; k < MAX_FALLING; k++) {
+        int slot = -1;    // represents empty falling slot 
+        for (int k = 0; k < MAX_FALLING; k++) {     // Loops through 8 columns to find the inactive column
             if (!falling[k].active) {
-                slot = k;
+                slot = k;                           // slot gets that column value
                 break;
             }
         }
         if (slot == -1) return;   // no more slots
 
-        // Temporary list of columns where pixel can land
+        // Temporary list of columns where pixel can spawn
         uint8_t validCols[WIDTH];
         uint8_t validCount = 0;
 
-        for (uint8_t col = 0; col < WIDTH; col++) { 
+        for (uint8_t col = 0; col < WIDTH; col++) {     // loops through 8 columns to check which columns are not full or have not been used in this spawn batch
             if (!isColumnFull(col) && !colUsed[col]) {
                 validCols[validCount++] = col;
             }
@@ -358,9 +391,14 @@ void FallingPixel_Spawn(uint8_t count) {    // short press -> 1 | long press -> 
     }
 }
 
+/**
+ * @brief Animation Engine of Falling Pixel Interaction
+ * 
+ */
 void FallingPixel_Update() {
 
-    if (millis() - lastFall < 25) return;   // this controls the fall speed FPS
+    // this controls the fall speed FPS
+    if (millis() - lastFall < 25) return;   // 1000ms / 25ms = 40FPS
     lastFall = millis();
 
     // ---------- UPDATE PHYSICS ----------
@@ -372,10 +410,9 @@ void FallingPixel_Update() {
         int stackTop = HEIGHT - columnHeight[x] - 1;    // calculates where pixel should stop 
 
         if (y >= stackTop) {    // Pixels have reached the stack 
-    
-            if (columnHeight[x] < HEIGHT) { 
+            if (columnHeight[x] < HEIGHT) {                
                 grid[columnHeight[x]][x] = falling[i].color;    // saves pixel into settled grid
-                columnHeight[x]++;  // increase stack height
+                columnHeight[x]++;                              // increase stack height
             }
             falling[i].active = false;  // deactivate falling
         } else {
@@ -384,17 +421,10 @@ void FallingPixel_Update() {
     }
 
     // ---------- RENDER ----------
-    // matrix.clear(); 
+    // matrix.clear();  // This was clearing the matrix with each frame everything was blinking leds falling
     fadeMatrix(150);    // replacing clear with fade 
-    
-    // ---- VERY slow global drift (30–40s cycle) ----
-    static uint16_t driftPhase = 0;
-    driftPhase++;   // extremely slow
 
-    uint8_t driftRaw = Adafruit_NeoPixel::sine8(driftPhase);
-    uint8_t drift = 240 + ((driftRaw * 15) >> 8);   // ~240–255 only
-
-    // draw settled grid
+    // draw settled grid - later need to add something to make this alive
     for (int x = 0; x < WIDTH; x++) {
         for (int y = 0; y < columnHeight[x]; y++) {
 
@@ -403,44 +433,37 @@ void FallingPixel_Update() {
             uint8_t g = (c >> 8)  & 0xFF;
             uint8_t b = c & 0xFF;
 
-            // ---- subtle shimmer (life!) ----
-            // static uint8_t shimmerPhase = 0;
-            // static unsigned long lastShimmer = 0;
-
-            // if (millis() - lastShimmer > 50) {
-            //     shimmerPhase++;
-            //     lastShimmer = millis();
-            // }
-
-            // shimmerPhase++;
-            // int8_t shimmer = (Adafruit_NeoPixel::sine8(shimmerPhase + x*5 + y*5) >> 6) - 3;
-
-            // r = constrain(r + shimmer, 0, 255);
-            // g = constrain(g + shimmer, 0, 255);
-            // b = constrain(b + shimmer, 0, 255);
-
             matrix.setPixelColor(pixelIndex(HEIGHT - 1 - y, x),r, g, b);
         }
     }
-
     // draw falling pixels
     for (int i = 0; i < MAX_FALLING; i++) {
         if (falling[i].active) {
             matrix.setPixelColor( pixelIndex(falling[i].y, falling[i].x), falling[i].color);
         }
     }
-
     matrix.show();
 }
 
-bool FallingPixel_IsFull() {    // checks if the column if full or not 
+/**
+ * @brief Checks if he columns is full or not
+ * 
+ * @return true if full
+ * @return false if not full
+ */
+bool FallingPixel_IsFull() {     
     for (int x = 0; x < WIDTH; x++) {
         if (columnHeight[x] < HEIGHT) return false; // if any column is not full means grid not full
     }
     return true;
 }
 
-void FallingPixel_WarningSparkle(uint16_t durationMs) {    // Anticipation part  
+/**
+ * @brief This is the Anticipation Part before the beaming out 
+ * Can work on this more better
+ * @param durationMs How much you want the anticipation part
+ */
+void FallingPixel_WarningSparkle(uint16_t durationMs) {    
     unsigned long start = millis();
     uint8_t phase = 0;
 
@@ -448,7 +471,7 @@ void FallingPixel_WarningSparkle(uint16_t durationMs) {    // Anticipation part
 
         fadeMatrix(180);   // very gentle decay - light fade 
 
-        for (int x = 0; x < WIDTH; x++) {   // traversing all columns
+        for (int x = 0; x < WIDTH; x++) {               // traversing all columns
             for (int y = 0; y < columnHeight[x]; y++) { // traversing all rows
 
                 // retrieving colors
@@ -458,6 +481,7 @@ void FallingPixel_WarningSparkle(uint16_t durationMs) {    // Anticipation part
                 uint8_t b = c & 0xFF;
 
                 int8_t sparkle = (Adafruit_NeoPixel::sine8(phase + x*11 + y*17) >> 6) - 2;  // adding bit of shimmer
+                // adding a small sine based shimmer per pixel
 
                 r = constrain(r + sparkle, 0, 255);
                 g = constrain(g + sparkle, 0, 255);
@@ -466,23 +490,26 @@ void FallingPixel_WarningSparkle(uint16_t durationMs) {    // Anticipation part
                 matrix.setPixelColor(pixelIndex(HEIGHT - 1 - y, x), r, g, b);
             }
         }
-
+        // Advance animation smoothly
         phase++;
         matrix.show();
         delay(30);
     }
 }
 
+/**
+ * @brief This is the Decay part Explosion Pixels beaming out
+ * 
+ */
 void FallingPixel_BeamClear() {     // Decay part pixel beaming out
 
-    int delayTime = 120;   // start slow decay
+    int delayTime = 120;   // start slow decay initially
 
-    while (!FallingPixel_IsFull() || true) {
+    while (!FallingPixel_IsFull() || true) {    // loop until the grid is empty
 
-        // count remaining pixels
-        int remaining = 0;
+        int remaining = 0;  // count remaining pixels
         for (int x = 0; x < WIDTH; x++) remaining += columnHeight[x];
-        if (remaining == 0) break;
+        if (remaining == 0) break;  // exit only when the grid is empty
 
         // pick random non-empty column
         int col;
@@ -490,7 +517,7 @@ void FallingPixel_BeamClear() {     // Decay part pixel beaming out
             col = random(WIDTH);
         } while (columnHeight[col] == 0);   // This will stop if the column is empty
 
-        int y = columnHeight[col] - 1;  // beam takes pixel one pixel above
+        int y = columnHeight[col] - 1;  // beam takes pixel one pixel above to the top with each frame
         uint32_t color = grid[y][col];
 
         // animate beam upward
@@ -519,18 +546,26 @@ void FallingPixel_BeamClear() {     // Decay part pixel beaming out
     }
 }
 
-void FallingPixel_FinalFade() {     // closure to end it
-    for (int i = 0; i < 8; i++) {
+/**
+ * @brief This is the soft closing final fade
+ * 
+ */
+void FallingPixel_FinalFade() {     
+    for (int i = 0; i < 8; i++) {   // This does the gradual Global Fade
         fadeMatrix(120);
         matrix.show();
         delay(60);
     }
-    FallingPixel_Init();
+    FallingPixel_Init();            //Resets the Falling Pixel Interaction State to start again
 }
 
+/**
+ * @brief This is the High Level Animation End Sequence
+ * 
+ */
 void FallingPixel_Explosion() {
-    FallingPixel_WarningSparkle(5000);   // anticipation
-    FallingPixel_BeamClear();             // destruction
-    FallingPixel_FinalFade();             // closure
+    FallingPixel_WarningSparkle(5000);    // Anticipation Phase
+    FallingPixel_BeamClear();             // Destruction Phase
+    FallingPixel_FinalFade();             // Closure Phase
 }
 

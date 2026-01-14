@@ -156,7 +156,7 @@ void LumaFSM::onButtonBPressed(bool longPress) {
                 FallingPixel_Spawn(1);  // drops 1 pixel
                 }
             else {  // long press Button B
-                uint8_t numPixels = random(10, 15);   // drops 2-3 pixel
+                uint8_t numPixels = random(8, 10);   // drops 8-10 pixel so that it could fill fasters, testing phase
                 FallingPixel_Spawn(numPixels);
             }
             break;
