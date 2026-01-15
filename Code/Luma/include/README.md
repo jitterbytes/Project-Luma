@@ -1,6 +1,6 @@
-#LUMA v1.0 
+# LUMA v1.0 
 
-##Device States & Transitions
+## Device States & Transitions
 
 ### 1. **STATE_DEVICE_ON (Boot Animation)**  
 Automatically starts when the device is powered ON.
