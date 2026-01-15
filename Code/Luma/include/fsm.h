@@ -3,7 +3,7 @@
  * @author sarvesh
  * @brief LUMA - MAIN FSM LOGIC
  * @version 1
- * @date 2026-1-14
+ * @date 2026-1-15
  * 
  * @copyright Copyright (c) 2026
  * 
@@ -58,7 +58,7 @@ class LumaFSM {
         unsigned long timerStartTime;       // When RUNNING state timer started
         unsigned long totalTimerDuration;   // Total ms for countdown
 
-        // State Handlers
+        // State Handlers for each State of FSM - Each handlers has its own logic and update function
         void handleState_DeviceOn();
         void handleState_DeviceScreensaver();
         void handleState_DeviceMenu();
@@ -68,7 +68,7 @@ class LumaFSM {
         // State Transitions 
         void transitionTo(LumaState newState);
 
-        // Utilities
+        // Utilities (for Serial Debugging)
         unsigned long getStateElapsedTime() const;
         void logStateTransition(LumaState from, LumaState to);
 

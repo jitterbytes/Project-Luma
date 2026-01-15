@@ -1,32 +1,40 @@
+/**
+ * @file fsm.cpp
+ * @author sarvesh
+ * @brief Implementation of fsm.h 
+ * @version 1.0
+ * @date 2026-1-15
+ * 
+ * @copyright Copyright (c) 2026
+ * 
+ */
+
 #include "fsm.h"
 #include "ws2812b.h"
 #include "animations.h"
 
-// === Screensaver global variables (The FSM and Button Handler both need this)===
+// === Screensaver global variables (The FSM and Button Handler both need this) ===
 static SaverPhase phase = MOVE;
 static unsigned long phaseStart = 0;
 
-
 // Menu Label Strings
 const char* menuNames[MENU_COUNT] = {
-    "THEMES",
+    "COLOR FLOOD",
     "FALLING PIXELS"
 };
 
-
-
-// === Constructor [Initializng Valid States] ===
+// ==================== Constructor [Initializng Valid States] ====================
 LumaFSM::LumaFSM()
-    : currentState(STATE_DEVICE_ON),
-      previousState(STATE_DEVICE_ON),
-      stateStartTime(millis()),
+    : currentState(STATE_DEVICE_ON),    // starts in boot animation
+      previousState(STATE_DEVICE_ON),   // same as current state so no false transition
+      stateStartTime(millis()),         // starts state timer
       timerStartTime(0),
       totalTimerDuration(0) {
         Serial.println("[FSM] LUMA Initialized - Starting STATE_DEVICE_ON");
 }
 
-// === Main Update Loop ===
-// First public function - Called every 20ms from main loop
+// ==================== Main Update Loop ====================
+// First public function - Called every 20ms -> 1000ms / 20ms = 50FPS
 void LumaFSM::update() {
     // Check if state has changed (for transition logging)
     if (currentState != previousState) {
@@ -35,7 +43,7 @@ void LumaFSM::update() {
         previousState = currentState;
     }
 
-    // Dispatch to appropriate state handler
+    // Dispatch to appropriate state handler - Each state to its corresponding state handler
     switch (currentState) {
         case STATE_DEVICE_ON:
             handleState_DeviceOn();
@@ -58,7 +66,7 @@ void LumaFSM::update() {
     }
 }
 
-// === Button Inputs ===
+// ==================== Button Inputs ====================
 // Button A : All state transistions are mentioned below
 void LumaFSM::onButtonAPressed(bool longPress) {
     Serial.print("[BTN] Button A ");
@@ -66,40 +74,41 @@ void LumaFSM::onButtonAPressed(bool longPress) {
     
     // Button A behavior varies by state
     switch (currentState) {
+
         case STATE_DEVICE_SCREENSAVER:
             if (!longPress) {   // Short press
                 Serial.println("[ACTION] Screensaver -> Menu (Button A short)");
                 transitionTo(STATE_DEVICE_MENU);
             }
-            else {
+            else {              // Long press
                 Serial.println("[BTN] Button A long press ignored in this state");
             }
             break;
 
         case STATE_DEVICE_MENU:  
-            if (!longPress) {   
+            if (!longPress) {   // Short press   
                 Serial.println("[ACTION] Screensaver <- Menu (Button A short)");
                 transitionTo(STATE_DEVICE_SCREENSAVER);
             }
-            else {
+            else {              // Long press
                 Serial.println("[BTN] Button A long press ignored in this state");
             }
             break;   
         case STATE_COLOR_FLOOD:
-            if (!longPress) {
-                Serial.println("[ACTION] Menu <- Themes (Button A short)");
+            if (!longPress) {   // Short press
+                Serial.println("[ACTION] Menu <- Color Flood (Button A short)");
                 transitionTo(STATE_DEVICE_MENU);
             }
-            else
+            else                // Long press
                 Serial.println("[BTN] Button A long press ignored in this state");
             break;
 
         case STATE_FALLING_PIXEL:
-            if(!longPress) {
+            if(!longPress) {    // Short press
                 Serial.println("[BTN] Button A short press ignored in this state");
             }
-            else
-                Serial.println("[ACTION] Menu <- Bright (Button A long)");
+            else                // Long press
+                Serial.println("[ACTION] Menu <- Falling Pixel (Button A long)");
                 transitionTo(STATE_DEVICE_MENU);
         default:
             Serial.println("[BTN] Button A ignored in this state");
@@ -114,13 +123,14 @@ void LumaFSM::onButtonBPressed(bool longPress) {
     
     // Button B behavior varies by state
     switch (currentState) {
+
         case STATE_DEVICE_SCREENSAVER:  
             if (!longPress) {   // Short press
-                Serial.println("[BTN] Orb hit it will explode");
+                Serial.println("[ACTION] Orb hit it will explode");
                 phaseStart = millis();
                 phase = VIBRATE;
             }
-            else {
+            else {              // Long press
                 Serial.println("[BTN] Button B long press ignored in this state");
             }
             break;
@@ -131,9 +141,9 @@ void LumaFSM::onButtonBPressed(bool longPress) {
                 Serial.print("[ACTION] Menu cycled -> ");
                 Serial.println(menuNames[selectedMenuOption]);
             } 
-            else {  // Long press B to select the menu option
+            else {              // Long press B to select the menu option
                 if (selectedMenuOption == MENU_COLOR_FLOOD) {
-                    Serial.println("[ACTION] Menu selected THEMES -> Themes");
+                    Serial.println("[ACTION] Menu selected Color Flood");
                     transitionTo(STATE_COLOR_FLOOD);
                 } else if (selectedMenuOption == MENU_FALLING_PIXELS) {
                     Serial.println("[ACTION] Menu selected Falling Pixels");
@@ -142,22 +152,24 @@ void LumaFSM::onButtonBPressed(bool longPress) {
             }
             break;   
         case STATE_COLOR_FLOOD:
-            if (!longPress) {
-                // Short press
+            if (!longPress) {   // Short press
                 ColorFlood_StartNew();   // inject new color
+                Serial.println("[ACTION] New Color Flood Injected");
             } 
-            else {
-                // long press
+            else {              // long press
+                Serial.println("[BTN] Button B long press ignored in this state");
             }
             break;
             
         case STATE_FALLING_PIXEL:
             if(!longPress) {    // short press Button B
                 FallingPixel_Spawn(1);  // drops 1 pixel
+                Serial.println("[ACTION] Drops One Pixel");
                 }
-            else {  // long press Button B
+            else {              // long press Button B
                 uint8_t numPixels = random(8, 10);   // drops 8-10 pixel so that it could fill fasters, testing phase
                 FallingPixel_Spawn(numPixels);
+                Serial.println("[ACTION] Drops Multiple Pixels");
             }
             break;
         default:
@@ -166,7 +178,7 @@ void LumaFSM::onButtonBPressed(bool longPress) {
     }
 }
 
-// === State Handlers (Main screens visible when the device is in the Particular state) ===
+// ==================== State Handlers (These are functions that run) ====================
 /**
  * @brief Description of the start up animation TV bars
  * 
@@ -177,20 +189,19 @@ void LumaFSM::onButtonBPressed(bool longPress) {
  * 
  */
 void LumaFSM::handleState_DeviceOn() {
-    unsigned long elapsed = getStateElapsedTime();  // Starts the state timer
+    unsigned long elapsed = getStateElapsedTime();    // Starts the state timer
     
-    const unsigned long STEP_MS = 250;  // Time alloted per column | Every 250ms next column starts
-    const unsigned long ROW_MS  = 150;   // Time per row within column | Controls vertical sweep feel
+    const unsigned long STEP_MS = 250;                // Time alloted per column | Every 250ms next column starts
+    const unsigned long ROW_MS  = 150;                // Time per row within column | Controls vertical sweep feel
 
-    int colStep = elapsed / STEP_MS;    //  Counts the Columns (phase 1)
-    // int rowStep = ((elapsed % STEP_MS) * HEIGHT) / ROW_MS;  // Row progression inside a column (phase 1)
+    int colStep = elapsed / STEP_MS;                  //  Counts the Columns (phase 1)
 
-    static unsigned long holdStart = 0; // variable for holding signal (phase 2) 
+    static unsigned long holdStart = 0;               // variable for holding signal (phase 2) 
     
-    static bool collapse_start = false;     // flag variable for collapse exit (phase 3)
-    static uint8_t offCount = 0;            // holds count of off leds (phase 3)
+    static bool collapse_start = false;               // flag variable for collapse exit (phase 3)
+    static uint8_t offCount = 0;                      // holds count of off leds (phase 3)
 
-    uint32_t bars[8] = {    // Color of the bars
+    uint32_t bars[8] = {                  // Color of the bars
         matrix.ColorHSV(0,     0,   10),  // White
         matrix.ColorHSV(9000,  255, 10),  // Yellow
         matrix.ColorHSV(30000, 255, 10),  // Cyan
@@ -202,14 +213,11 @@ void LumaFSM::handleState_DeviceOn() {
     };
 
     // Phase 2 and Phase 3
-    if (colStep >= WIDTH) {
+    if (colStep >= WIDTH) {                             // When all the columns are printed completely
+        if (!collapse_start) {                          // Hold final image Phase 2
+            if (holdStart == 0) holdStart = millis();   // start hold timer
 
-        // Hold final image Phase 2
-        if (!collapse_start) {
-            // static unsigned long holdStart = 0;
-            if (holdStart == 0) holdStart = millis();
-
-            if (millis() - holdStart < 2000) {   // Holding image for 2s
+            if (millis() - holdStart < 2000) {          // Holding image for 2s
                 matrix.show();
                 return;
             }
@@ -221,8 +229,8 @@ void LumaFSM::handleState_DeviceOn() {
         }
 
         // Signal Collapse exit Phase 3
-        for (int k = 0; k < 3; k++) {   // each frame kills 3 leds | increase the value for faster collapse
-            int r = random(0, HEIGHT);
+        for (int k = 0; k < 3; k++) {       // each frame kills 3 leds | increase the value for faster collapse
+            int r = random(0, HEIGHT);      // randomly selects the row and column   
             int c = random(0, WIDTH);
             int idx = pixelIndex(r, c);
 
@@ -231,10 +239,10 @@ void LumaFSM::handleState_DeviceOn() {
                 offCount++;
             }
         }
-
         matrix.show();
 
-        // When most pixels are off, transition if dont want to turn off all led multiply by * 0.9 offcount
+        // Here either wait for all the 64 leds to turn off as i did below 
+        // or multiply (WIDTH * HEIGHT) by 0.9 so around 57 leds are off the state will transition
         if (offCount >= (WIDTH * HEIGHT)) {
             collapse_start = false;
             transitionTo(STATE_DEVICE_SCREENSAVER);
@@ -243,7 +251,7 @@ void LumaFSM::handleState_DeviceOn() {
     }
 
     // Phase 1
-    matrix.clear(); // clears frame buffer before drawing
+    matrix.clear();     // clears frame buffer before drawing
 
     // Fully revealed columns - if we remove this loop then the revealed columns won't hold their colors thats why its necessary to redraw all the revealed columns
     for (int c = 0; c < colStep && c < WIDTH; c++) {
@@ -252,8 +260,7 @@ void LumaFSM::handleState_DeviceOn() {
         }
     }
 
-    // Currently revealing column - row progression in column
-    if (colStep < WIDTH) {
+    if (colStep < WIDTH) {  // Currently revealing column - row progression in column
         int rowStep = ((elapsed % STEP_MS) * HEIGHT) / STEP_MS; // Row progression and it scales from 0...7
 
         for (int i = 0; i <= rowStep && i < HEIGHT; i++) {
@@ -261,7 +268,6 @@ void LumaFSM::handleState_DeviceOn() {
             matrix.setPixelColor(pixelIndex(r, colStep), bars[colStep]);
         }
     }
-
     matrix.show();
 }
 
@@ -270,20 +276,20 @@ void LumaFSM::handleState_DeviceScreensaver() {
     // Infinite state, waiting for button press
     // Button B short press -> make orb explode
     // Button A short press -> MENU (handled in onButtonAPressed)
+    // Button B/A long press -> No action
 
     static unsigned long lastStep = 0;
-    static int pxRow = HEIGHT / 2;  // the pixel starts at (4,0)
+    static int pxRow = HEIGHT / 2;          // the pixel orb sstarts at (4,0)
     static int pxCol = 0;
-    static uint32_t pxColor = matrix.ColorHSV(40000, 255, 10);  // pixel color
+    static uint32_t pxColor = matrix.ColorHSV(40000, 255, 10);  // pixel orb color
 
-    const unsigned long MOVE_MS    = 100;    // controls the speed of pixel in idle animation  low value -> higher speed and vice versa
+    const unsigned long MOVE_MS    = 100;  // controls the speed of pixel in idle animation  low value -> higher speed and vice versa
     const unsigned long VIBRATE_MS = 300;  // this controls the vibrate phase
 
     // === MOVE ===
-    if (phase == MOVE) {    // Idle animation loop
+    if (phase == MOVE) {    // Moving animation loop
 
-        if (millis() - lastStep < MOVE_MS)
-            return;
+        if (millis() - lastStep < MOVE_MS) return;  // Frame Control Rate 1000ms / 100ms -> 10FPS
 
         lastStep = millis();
 
@@ -291,15 +297,15 @@ void LumaFSM::handleState_DeviceScreensaver() {
         matrix.setPixelColor(pixelIndex(pxRow, pxCol), pxColor);    // start pixel at 4,0
         matrix.show();
 
-        pxCol++;
-        if (pxCol >= WIDTH) // in idle animation the pixel just move across columns and wrap around
-            pxCol = 0;
+        pxCol++;            // Move the orb to the right column
+        if (pxCol >= WIDTH) // If the orb reached the end wrap around
+            pxCol = 0;      // start from column 0
 
         return;
     }
 
     // === VIBRATE ===
-    if (phase == VIBRATE) { // feedback phase triggered by button b short press micro anticipation before the explosion
+    if (phase == VIBRATE) { // feedback phase triggered by Button B short press micro anticipation before the explosion
 
         if (millis() - phaseStart > VIBRATE_MS) {   // if vibrate phase done then explode
             startPixelExplosion(pxRow, pxCol);
@@ -312,20 +318,19 @@ void LumaFSM::handleState_DeviceScreensaver() {
         int vr = pxRow + random(-1, 2); // this micro anticipation jitter will be of 3x3 matrix -1,0,1
         int vc = pxCol + random(-1, 2);
 
-        if (vr >= 0 && vr < HEIGHT && vc >= 0 && vc < WIDTH) {
+        if (vr >= 0 && vr < HEIGHT && vc >= 0 && vc < WIDTH) {  // Bounding checking vr and vc
             matrix.setPixelColor(pixelIndex(vr, vc), pxColor);
         }
-
         matrix.show();
         return;
     }
 
     // === EXPLODE ===
-    if (phase == EXPLODE) { // Explosion 
+    if (phase == EXPLODE) {             // Explosion 
 
-        updatePixelExplosion(); // Continously update the Explosion animation
-        if (isExplosionDone()) {    // if explosion done choose new starting point
-            pxRow = random(0, HEIGHT);
+        updatePixelExplosion();         // Continously update the Explosion animation
+        if (isExplosionDone()) {        // if explosion done choose new starting point
+            pxRow = random(0, HEIGHT);  // choose random origin coordinates
             pxCol = random(0, WIDTH);
 
             pxColor = matrix.ColorHSV(random(0, 65535), 255, 10); // change color
@@ -338,7 +343,9 @@ void LumaFSM::handleState_DeviceMenu() {
     // Infinite state, showing current menu option
     // Button B short press -> cycle menu
     // Button B long press -> select menu
-    
+    // Button A short press -> back to screensaver
+    // Button A long press unused
+
     // Optional: Print current selection periodically (every 2 seconds)
     unsigned long elapsed = getStateElapsedTime();
     if (elapsed % 2000 < 20) { // Trigger once per 2 seconds
@@ -346,73 +353,73 @@ void LumaFSM::handleState_DeviceMenu() {
         Serial.println(menuNames[selectedMenuOption]);
     }
 
-    switch (selectedMenuOption)
+    switch (selectedMenuOption)     // switch Menu Options
     {
-    case MENU_COLOR_FLOOD:
-        drawMenu_ColorFlood();
+        case MENU_COLOR_FLOOD:
+        drawMenu_ColorFlood();      // color flood preview
         break;
-    case MENU_FALLING_PIXELS:
-        drawMenu_FallingPixel();
+
+        case MENU_FALLING_PIXELS:
+        drawMenu_FallingPixel();    // falling pixels preview
         break;
-    default:
+
+        default:
         break;
     }
 
 }
 
-static bool colorFloodInit = false; // Initialize
+// ===== Color Flood State Handlers =====
+static bool colorFloodInit = false; // Color Flood Initializing Flag for first entry
 void LumaFSM::handleState_ColorFlood() {
 
-    if (!colorFloodInit) {
+    if (!colorFloodInit) {      // Initialize Color Flood
         ColorFlood_Init();
-        colorFloodInit = true;
+        colorFloodInit = true;  
     }
 
-    ColorFlood_Update();
+    ColorFlood_Update();    // Animation Engine of Color Flood Called every 20ms according to the main FSM
 }
 
-// Initialize on first entry (state transition)
-static bool fallingpixel_init = false;
-
+// ===== Falling Pixel State Handlers =====
+static bool fallingpixel_init = false;  // Falling Pixel Initializing Flag on first entry
 void LumaFSM::handleState_FallingPixel() {
 
-    if (!fallingpixel_init) {
+    if (!fallingpixel_init) {   // Initialize Falling Pixels
         FallingPixel_Init();
         fallingpixel_init = true;
     }
 
-    FallingPixel_Update();
+    FallingPixel_Update();  // Animation Engine of Falling Pixel Called every 20ms according to the main FSM  
 
-    if (FallingPixel_IsFull()) {
+    if (FallingPixel_IsFull()) {    // If the matrix full proceed to Explosion 
         FallingPixel_Explosion();
     }
 }
 
-
-
-// === TRANSITION HANDLER ===
+// ==================== Transition Handler ====================
 void LumaFSM::transitionTo(LumaState newState) {
     if (newState != currentState) {
         currentState = newState;
     }
 
-    // Commenting this below part
+    // Commenting this below part so that user can resume the falling pixel page from where it left from
     // when leaving falling pixel page, reset the flag so the user start with clear matrix
     // if (currentState == STATE_FALLING_PIXEL) { 
     //     fallingpixel_init = false;
     // }
 
-    if (currentState != STATE_COLOR_FLOOD) {
+    if (currentState != STATE_COLOR_FLOOD) {    // Color Flood will start from fresh if you left the page and came back
         colorFloodInit = false;
     }
 }
 
-// === Utilities ===
+// ==================== Utilities (Used for Serial Debugging) ====================
 unsigned long LumaFSM::getStateElapsedTime() const {
     return millis() - stateStartTime;
 }
 
-void LumaFSM::logStateTransition(LumaState from, LumaState to) {
+void LumaFSM::logStateTransition(LumaState from, LumaState to) {    
     const char* stateNames[] = {
         "DEVICE_ON",
         "SCREENSAVER",
